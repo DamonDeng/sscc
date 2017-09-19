@@ -27,18 +27,38 @@ namespace damonsscc{
   
   size_t http_data_writer(void* data, size_t size, size_t nmemb, void* content);
 
+  const string S3Client::CN_REGION = "cn-north-1";
+  
+  const string S3Client::US_EAST_1 = "us-east-1";
+  const string S3Client::US_EAST_2 = "us-east-2";
+  const string S3Client::US_WEST_1 = "us-west-1";
+  const string S3Client::US_WEST_2 = "us-west-2";
+  const string S3Client::AP_SOUTH_1 = "ap-south-1";
+  const string S3Client::EU_WEST_1 = "eu-west-1";
+  const string S3Client::EU_WEST_2 = "eu-west-2";
+  const string S3Client::AP_SOUTHEAST_1 = "ap-southeast-1";
+  const string S3Client::AP_SOUTHEAST_2 = "ap-southeast-2";
+  const string S3Client::AP_NORTHEAST_1 = "ap-northeast-1";
+  const string S3Client::AP_NORTHEAST_2 = "ap-northeast-2";
+  const string S3Client::CA_CENTRAL_1 = "ca-central-1";
+  const string S3Client::EU_CENTRAL_1 = "eu-central-1";
+  const string S3Client::SA_EAST_1 = "sa-east-1";
+  const string S3Client::US_GOV_WEST_1 = "us-gov-west-1";
+  const string S3Client::FIPS_US_GOV_WEST_1 = "fips-us-gov-west-1";
+
+
   int S3Client::connectTo(){
     LOG(INFO) << "Starting to connect to S3" << endl;
 
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *ecurl_ = curl_easy_init();
 
-    const char pURL[] = "http://www.baidu.com/"; 
+    string s3EndPoint = getEndPoint("ap-northeast-1"); 
 
     std::string buffer_;
 
     if(ecurl_){
-      curl_easy_setopt(ecurl_, CURLOPT_URL, pURL);//url地址  
+      curl_easy_setopt(ecurl_, CURLOPT_URL, s3EndPoint.c_str());//url地址  
       //curl_easy_setopt(ecurl_,CURLOPT_POST,0); //设置问非0表示本次操作为post 
       curl_easy_setopt(ecurl_, CURLOPT_WRITEFUNCTION, http_data_writer); 
       curl_easy_setopt(ecurl_, CURLOPT_WRITEDATA, &buffer_);
@@ -58,36 +78,16 @@ namespace damonsscc{
   }
 
   string S3Client::getEndPoint(string regionName){
-    if(regionName == US_EAST_1){
-      return EP_US_EAST_1;
+    
+    string endPoint = "s3." + regionName + ".amazonaws.com";
+
+    
+    if(regionName == CN_REGION)
+    {
+      endPoint = endPoint + ".cn"; 
     }
-    else if(regionName == US_WEST_1){
-      return EP_US_WEST_1;
-    }
-    else if(regionName == US_WEST_2){
-      return EP_US_WEST_2;
-    }
-    else if(regionName == EU_WEST_1){
-      return EP_EU_WEST_1;
-    }
-    else if(regionName == AP_SOUTHEAST_1){
-      return EP_AP_SOUTHEAST_1;
-    }
-    else if(regionName == AP_SOUTHEAST_2){
-      return EP_AP_SOUTHEAST_2;
-    }
-    else if(regionName == AP_NORTHEAST_1){
-      return EP_AP_NORTHEAST_1;
-    }
-    else if(regionName == SA_EAST_1){
-      return EP_SA_EAST_1;
-    }
-    else if(regionName == US_GOV_WEST_1){
-      return EP_US_GOV_WEST_1;
-    }
-    else if(regionName == FIPS_US_GOV_WEST_1){
-      return EP_FIPS_US_GOV_WEST_1;
-    }
+
+    return endPoint;
   }
 
   size_t http_data_writer(void* data, size_t size, size_t nmemb, void* content)  
