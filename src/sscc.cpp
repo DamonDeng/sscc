@@ -1,8 +1,13 @@
 #include "sscc.h"
+#include "TimeUtils.h"
 #include <glog/logging.h>
 #include <curl/curl.h>
+#include <time.h>
 
-namespace damonsscc{
+using namespace std;
+using namespace ssccutils;
+
+namespace sscc{
   
   S3Client::S3Client(){
 
@@ -47,19 +52,70 @@ namespace damonsscc{
   const string S3Client::FIPS_US_GOV_WEST_1 = "fips-us-gov-west-1";
 
 
-  int S3Client::connectTo(){
+  int S3Client::connectTo(string regionName, string bucketName){
     LOG(INFO) << "Starting to connect to S3" << endl;
 
+    char *keyid = getenv("AWS_ACCESS_KEY_ID");
+    char *seckey = getenv("AWS_SECRET_ACCESS_KEY");
+
+    
+    if (!keyid){  
+      LOG(ERROR) << "Failed to load aws access key id" << endl;
+      return 1;
+    }
+
+    if (!seckey){  
+      LOG(ERROR) << "Failed to load aws secret access key" << endl;
+      return 2;
+    }
+
+    
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *ecurl_ = curl_easy_init();
 
-    string s3EndPoint = getEndPoint("ap-northeast-1"); 
+    string s3EndPoint = getEndPoint(regionName); 
+
+    string urlString = getURL(s3EndPoint, bucketName);
+
+    LOG(INFO) << "urlString: " << urlString << endl;
 
     std::string buffer_;
 
     if(ecurl_){
-      curl_easy_setopt(ecurl_, CURLOPT_URL, s3EndPoint.c_str());//url地址  
-      //curl_easy_setopt(ecurl_,CURLOPT_POST,0); //设置问非0表示本次操作为post 
+      curl_easy_setopt(ecurl_, CURLOPT_URL, urlString.c_str());
+      
+      struct curl_slist *headers = NULL;
+
+      string host = "Host: " + s3EndPoint;
+
+      string dateTime = TimeUtils::getTime();
+      string headerDate = "Date: " + dateTime;
+      string amzDate = "x-amz-date: " + dateTime;
+
+      ostringstream authenticationStream;
+      authenticationStream << "Authorization: AWS4-HMAC-SHA256 ";
+      authenticationStream << "Credential=";
+      authenticationStream << keyid;
+      authenticationStream << "/";
+      authenticationStream << "dateString";
+      authenticationStream << "/";
+      authenticationStream << regionName;
+      authenticationStream << "/s3/aws4_request, ";
+      authenticationStream << "SignedHeaders=host;range;x-amz-date,";
+      authenticationStream << "Signature=";
+      authenticationStream << "signatureString";
+
+      LOG(INFO) << authenticationStream.str() << endl;
+      
+      headers = curl_slist_append(headers, host.c_str());
+      headers = curl_slist_append(headers, headerDate.c_str());
+      headers = curl_slist_append(headers, amzDate.c_str());
+      headers = curl_slist_append(headers, authenticationStream.str().c_str());
+      
+
+      
+      curl_easy_setopt(ecurl_, CURLOPT_HTTPHEADER, headers);
+
       curl_easy_setopt(ecurl_, CURLOPT_WRITEFUNCTION, http_data_writer); 
       curl_easy_setopt(ecurl_, CURLOPT_WRITEDATA, &buffer_);
 
@@ -70,6 +126,10 @@ namespace damonsscc{
       LOG(INFO) << "The response: " << endl;
 
       LOG(INFO) << buffer_ << endl;
+
+      LOG(INFO) << "Now is: " << TimeUtils::getTime() << endl;
+
+      
     }else{
       LOG(WARNING) << "Failed to make the request" << endl;
     }
@@ -90,6 +150,13 @@ namespace damonsscc{
     return endPoint;
   }
 
+  string S3Client::getURL(string endPoint, string bucketName){
+    return "http://" + endPoint + "/" + bucketName;
+  }
+
+  
+
+  
   size_t http_data_writer(void* data, size_t size, size_t nmemb, void* content)  
   {  
       long totalSize = size*nmemb;  

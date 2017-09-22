@@ -4,7 +4,7 @@
 
 
 using namespace std;
-using namespace damonsscc;
+using namespace sscc;
 
 int regionNameTest();
 
@@ -20,8 +20,9 @@ int main(int argc, char * argv[]){
  
   S3Client s3Client;
 
-  s3Client.connectTo();
+  s3Client.connectTo("ap-southeast-1", "testing.sig.damondeng.com");
 
+ 
   google::ShutdownGoogleLogging();
 
 

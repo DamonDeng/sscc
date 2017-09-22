@@ -7,13 +7,15 @@
 
 using namespace std;
 
-namespace damonsscc{
+namespace sscc{
   class S3Client{
 
     public:
       S3Client();
       
-      int connectTo();
+      int connectTo(string bucketName);
+      int connectTo(string regionName, string bucketName);
+
 
       string getEndPoint(string regionName);
 
@@ -40,6 +42,8 @@ namespace damonsscc{
       
     private:
 
+      string getURL(string endPoint, string bucketName);
+      
     
   };
 }
